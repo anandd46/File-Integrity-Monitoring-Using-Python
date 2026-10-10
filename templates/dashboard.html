@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon, badge, short %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Security Dashboard</h1>
+    <p>File integrity status for the directories you chose to monitor. Every figure below is read from the local database.</p>
+  </div>
+  <div class="actions">
+    <a class="btn btn-ghost" href="{{ url_for('fim.directories') }}">{{ icon('plus') }} Register directory</a>
+    <a class="btn btn-ghost" href="{{ url_for('fim.directories') }}">{{ icon('shield') }} Create baseline</a>
+    <form method="post" action="{{ url_for('fim.scan_all') }}" data-loading>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="btn btn-primary">{{ icon('scan') }} Run scan</button>
+    </form>
+    <a class="btn btn-ghost" href="{{ url_for('fim.events', category='FILE_CHANGE') }}">{{ icon('alert') }} View changes</a>
+    <a class="btn btn-ghost" href="{{ url_for('fim.reports_page') }}">{{ icon('download') }} Export report</a>
+  </div>
+</div>
+
+{% if stats.directories == 0 %}
+<div class="alert alert-info" role="note">{{ icon('info') }}<div><strong>Getting started.</strong> Register a directory you own, create a trusted baseline, then run a scan. A sample folder is included in <code>sample_files/</code>.</div></div>
+{% elif stats.changes > 0 %}
+<div class="alert alert-warn" role="alert">{{ icon('alert') }}<div><strong>{{ stats.changes }} file change{{ '' if stats.changes == 1 else 's' }} detected since the trusted baseline</strong>
+  ({{ stats.modified }} modified, {{ stats.new }} new, {{ stats.deleted }} deleted). A changed hash means the contents differ from the baseline; it does <em>not</em> prove malware or an attack. Review each change, then rebaseline deliberately if it was legitimate.
+  <a href="{{ url_for('fim.events', category='FILE_CHANGE') }}">Review changes</a></div></div>
+{% elif stats.errors > 0 %}
+<div class="alert alert-warn" role="alert">{{ icon('alert') }}<div><strong>{{ stats.errors }} file{{ '' if stats.errors == 1 else 's' }} could not be checked</strong> in the latest scans. These are reported as errors, never as deleted files.</div></div>
+{% elif stats.baseline_files > 0 and stats.last_success %}
+<div class="alert alert-ok" role="status">{{ icon('check') }}<div>No differences from the trusted baseline in the latest scans.</div></div>
+{% endif %}
+
+<div class="grid grid-stats">
+  <div class="stat"><div class="label">Monitored directories</div><div class="value">{{ stats.directories }}</div></div>
+  <div class="stat"><div class="label">Baseline files</div><div class="value">{{ stats.baseline_files }}</div></div>
+  <div class="stat ok"><div class="label">Unchanged</div><div class="value">{{ stats.unchanged }}</div><div class="sub">latest scan per directory</div></div>
+  <div class="stat crit"><div class="label">Modified</div><div class="value">{{ stats.modified }}</div></div>
+  <div class="stat new"><div class="label">New</div><div class="value">{{ stats.new }}</div></div>
+  <div class="stat del"><div class="label">Deleted</div><div class="value">{{ stats.deleted }}</div></div>
+  <div class="stat warn"><div class="label">Could not be checked</div><div class="value">{{ stats.errors }}</div></div>
+  <div class="stat"><div class="label">Last successful scan</div>
+    <div class="sub">{{ stats.last_success or 'No completed scan yet' }}</div></div>
+</div>
+
+<div class="grid grid-2">
+  <section class="card" aria-labelledby="chartTitle">
+    <h2 id="chartTitle">Changes detected per scan</h2>
+    {% if chart.labels %}
+    <div class="chart-box" id="activityChart" data-chart='{{ chart|tojson }}' role="img"
+         aria-label="Bar chart of modified, new, deleted and error counts for the last {{ chart.labels|length }} scans"><canvas></canvas></div>
+    <div class="legend"><span><i class="lg-mod"></i>Modified</span><span><i class="lg-new"></i>New</span><span><i class="lg-del"></i>Deleted</span><span><i class="lg-err"></i>Errors</span></div>
+    {% else %}
+    <div class="empty"><strong>No scan data yet</strong>The chart appears after your first scan.</div>
+    {% endif %}
+  </section>
+  <section class="card" aria-labelledby="monTitle">
+    <h2 id="monTitle">Monitoring service</h2>
+    <dl class="kv">
+      <dt>Periodic scanning</dt><dd>
+        {% if monitor.label == 'ACTIVE' %}<span class="badge badge-ok"><span class="dot" aria-hidden="true"></span>Active</span>
+        {% elif monitor.enabled %}<span class="badge badge-warn"><span class="dot" aria-hidden="true"></span>Enabled, worker not running</span>
+        {% else %}<span class="badge badge-info"><span class="dot" aria-hidden="true"></span>Disabled</span>{% endif %}</dd>
+      <dt>Interval</dt><dd>{{ monitor.interval }} seconds</dd>
+      <dt>Last periodic run</dt><dd>{{ monitor.last_run or '—' }}</dd>
+      <dt>Last worker error</dt><dd>{{ monitor.last_error or 'None' }}</dd>
+    </dl>
+    <form method="post" action="{{ url_for('fim.toggle_monitoring') }}" class="actions">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      {% if monitor.enabled %}
+        <button class="btn btn-ghost" name="action" value="stop" type="submit">Disable periodic scanning</button>
+      {% else %}
+        <button class="btn btn-secondary" name="action" value="start" type="submit">Enable periodic scanning</button>
+      {% endif %}
+      <a class="btn btn-ghost" href="{{ url_for('fim.settings') }}">Change interval</a>
+    </form>
+  </section>
+</div>
+
+<section class="card" aria-labelledby="evTitle">
+  <h2 id="evTitle">Recent security events</h2>
+  {% if events %}
+  <div class="table-wrap"><table>
+    <thead><tr><th>Time (UTC)</th><th>Category</th><th>File</th><th>Description</th></tr></thead>
+    <tbody>
+    {% for e in events %}
+      <tr><td>{{ e.timestamp }}</td>
+          <td>{{ badge(e.change_type or e.category) if e.category == 'FILE_CHANGE' else badge(e.category) }}</td>
+          <td class="path">{{ e.rel_path or '—' }}</td><td>{{ e.description }}</td></tr>
+    {% endfor %}
+    </tbody></table></div>
+  <p><a href="{{ url_for('fim.events') }}">All events →</a></p>
+  {% else %}
+  <div class="empty"><strong>No security events recorded</strong>Events appear when baselines are created or changes are detected.</div>
+  {% endif %}
+</section>
+
+<section class="card" aria-labelledby="scTitle">
+  <h2 id="scTitle">Recent scans</h2>
+  {% if scans %}
+  <div class="table-wrap"><table>
+    <thead><tr><th>Scan</th><th>Directory</th><th>Started (UTC)</th><th>Result</th><th>Mod</th><th>New</th><th>Del</th><th>Err</th></tr></thead>
+    <tbody>
+    {% for s in scans %}
+      <tr><td><a href="{{ url_for('fim.scan_detail', scan_id=s.id) }}">#{{ s.id }}</a></td><td>{{ s.dir_label or s.dir_path }}</td>
+          <td>{{ s.started_at }}</td><td>{{ badge(s.status) }}</td>
+          <td>{{ s.modified }}</td><td>{{ s.new_files }}</td><td>{{ s.deleted }}</td><td>{{ s.errors }}</td></tr>
+    {% endfor %}
+    </tbody></table></div>
+  {% else %}
+  <div class="empty"><strong>No scans yet</strong>Create a baseline, then run a scan.</div>
+  {% endif %}
+</section>
+{% endblock %}

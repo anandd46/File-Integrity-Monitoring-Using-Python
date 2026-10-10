@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon, badge %}
+{% block title %}Settings{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Settings</h1><p>Security configuration and periodic scanning. Secret keys and environment variables are never displayed.</p></div></div>
+<div class="grid grid-2">
+<section class="card" aria-labelledby="perTitle">
+  <h2 id="perTitle">Periodic scanning</h2>
+  <form method="post" action="{{ url_for('fim.update_settings') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="form-grid">
+      <div class="wide"><label class="check"><input type="checkbox" name="periodic_enabled"{% if monitor.enabled %} checked{% endif %}> Enable periodic scanning</label></div>
+      <div class="wide"><label for="scan_interval_seconds">Scan interval (seconds)</label>
+        <input type="number" id="scan_interval_seconds" name="scan_interval_seconds" min="{{ info.min_interval }}" max="{{ info.max_interval }}" value="{{ monitor.interval }}" required>
+        <div class="help">Allowed range {{ info.min_interval }}–{{ info.max_interval }} seconds. Checked again on the server.</div></div>
+      <div><button class="btn btn-primary" type="submit">Save settings</button></div>
+    </div>
+  </form>
+  <p class="help">One background worker is created when the application starts. Scans never overlap; if one is running, the next is skipped.</p>
+</section>
+<section class="card" aria-labelledby="stTitle">
+  <h2 id="stTitle">Status</h2>
+  <dl class="kv">
+    <dt>Monitoring status</dt><dd>{{ monitor.label }}</dd>
+    <dt>Last periodic run</dt><dd>{{ monitor.last_run or '—' }}</dd>
+    <dt>Last worker error</dt><dd>{{ monitor.last_error or 'None' }}</dd>
+    <dt>Database status</dt><dd>{{ info.database_status }}</dd>
+    <dt>Application version</dt><dd>{{ info.version }}</dd>
+    <dt>Hashing algorithm</dt><dd>{{ info.algorithm }}</dd>
+    <dt>Log location</dt><dd class="path">{{ info.log_location }}</dd>
+    <dt>Export location</dt><dd class="path">{{ info.export_location }}</dd>
+  </dl>
+</section>
+</div>
+<section class="card" aria-labelledby="limTitle">
+  <h2 id="limTitle">Security limitations</h2>
+  <ul>
+    <li>The tool <strong>detects</strong> differences when a scan runs. It does not prevent changes or block attackers.</li>
+    <li>A hash difference is an indicator to investigate. It does not identify who changed a file or whether the change is malicious.</li>
+    <li>The baseline is only as trustworthy as where it is stored. An attacker who can change both the files and the SQLite database could hide changes.</li>
+    <li>Changes made and reverted between two scans are not seen.</li>
+    <li>Single local user, bound to localhost. Exposing it to other computers needs authentication, HTTPS and further hardening.</li>
+    <li>The in-process worker suits one local process only, not multi-worker production servers.</li>
+  </ul>
+</section>
+{% endblock %}

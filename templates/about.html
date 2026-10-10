@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon %}
+{% block title %}About Project{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>About this project</h1>
+  <p>Implementation of File Integrity Monitoring Using Python — Web Application Security mini-project.</p></div></div>
+<section class="card">
+  <dl class="kv">
+    <dt>Author</dt><dd>Anand D</dd>
+    <dt>Course</dt><dd>24CSA535 — Web Application Security</dd>
+    <dt>Version</dt><dd>{{ cfg_version }}</dd>
+    <dt>Stack</dt><dd>Python, Flask, SQLite, SHA-256 (<code>hashlib</code>), Jinja2</dd>
+  </dl>
+</section>
+<section class="card">
+  <h2>How it works</h2>
+  <ol class="steps">
+    <li><strong>Register</strong> a directory you are authorised to monitor.</li>
+    <li><strong>Baseline:</strong> every file is hashed with SHA-256 and the result is stored as the trusted reference.</li>
+    <li><strong>Scan:</strong> files are hashed again and compared with the baseline: <em>UNCHANGED</em>, <em>MODIFIED</em>, <em>NEW</em>, <em>DELETED</em>, or <em>ERROR</em> when a file could not be read.</li>
+    <li><strong>Review</strong> events and reports. Rebaseline only deliberately, after confirming a change is legitimate.</li>
+  </ol>
+</section>
+<section class="card">
+  <h2>Web application security controls</h2>
+  <ul>
+    <li>Server-side validation of every path, ID, filter, page number and interval</li>
+    <li>Path traversal and symbolic-link containment checks</li>
+    <li>Parameterised SQL with allow-listed sort fields</li>
+    <li>Jinja2 autoescaping, no <code>innerHTML</code>, strict Content Security Policy</li>
+    <li>CSRF tokens on every state-changing POST</li>
+    <li>Security headers, safe error pages, localhost-only binding</li>
+    <li>CSV formula-injection protection</li>
+  </ul>
+  <p class="muted">A detected change is an indicator of possible tampering or of an ordinary edit. It is not proof of malicious activity.</p>
+</section>
+{% endblock %}

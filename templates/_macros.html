@@ -1,0 +1,45 @@
+{% macro icon(name) -%}
+<svg class="icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+{%- if name == 'shield' %}<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/>
+{%- elif name == 'folder' %}<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+{%- elif name == 'files' %}<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/>
+{%- elif name == 'alert' %}<path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18h.01"/>
+{%- elif name == 'clock' %}<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>
+{%- elif name == 'report' %}<path d="M5 4h14v16H5z"/><path d="M8 9h8M8 13h8M8 17h5"/>
+{%- elif name == 'gear' %}<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/>
+{%- elif name == 'info' %}<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5h.01"/>
+{%- elif name == 'home' %}<path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/>
+{%- elif name == 'scan' %}<path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/><path d="M4 12h16"/>
+{%- elif name == 'download' %}<path d="M12 4v12M7 11l5 5 5-5M5 20h14"/>
+{%- elif name == 'plus' %}<path d="M12 5v14M5 12h14"/>
+{%- elif name == 'check' %}<path d="M5 12l5 5 9-10"/>
+{%- elif name == 'menu' %}<path d="M4 6h16M4 12h16M4 18h16"/>
+{%- elif name == 'trash' %}<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>
+{%- elif name == 'refresh' %}<path d="M20 11a8 8 0 0 0-14-4M4 4v4h4M4 13a8 8 0 0 0 14 4M20 20v-4h-4"/>
+{%- endif -%}
+</svg>
+{%- endmacro %}
+
+{% macro badge(status) -%}
+{%- set cls = {'UNCHANGED':'ok','MODIFIED':'crit','NEW':'new','DELETED':'del','ERROR':'warn','BASELINED':'info',
+  'COMPLETED':'ok','PARTIAL':'warn','FAILED':'crit','RUNNING':'info',
+  'FILE_CHANGE':'crit','INSPECTION_ERROR':'warn','SCAN_FAILURE':'crit','BASELINE_CHANGE':'info','SERVICE_ERROR':'warn',
+  'MANUAL':'info','PERIODIC':'info'}.get(status, 'info') -%}
+{%- set text = {'FILE_CHANGE':'File change','INSPECTION_ERROR':'Inspection error','SCAN_FAILURE':'Scan failure',
+  'BASELINE_CHANGE':'Baseline change','SERVICE_ERROR':'Service error','BASELINED':'Baselined (not yet scanned)'}.get(status, status) -%}
+<span class="badge badge-{{ cls }}"><span class="dot" aria-hidden="true"></span>{{ text }}</span>
+{%- endmacro %}
+
+{% macro short(h) -%}
+{%- if h %}<code class="hash" title="{{ h }}">{{ h[:12] }}…</code>{% else %}<span class="muted">—</span>{% endif -%}
+{%- endmacro %}
+
+{% macro pager(endpoint, page, pages, args) -%}
+{%- if pages > 1 %}
+<nav class="pager" aria-label="Pagination">
+  {% if page > 1 %}<a class="btn btn-ghost btn-sm" href="{{ url_for(endpoint, page=page-1, **args) }}">‹ Previous</a>{% endif %}
+  <span class="muted">Page {{ page }} of {{ pages }}</span>
+  {% if page < pages %}<a class="btn btn-ghost btn-sm" href="{{ url_for(endpoint, page=page+1, **args) }}">Next ›</a>{% endif %}
+</nav>
+{%- endif %}
+{%- endmacro %}

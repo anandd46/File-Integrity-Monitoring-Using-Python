@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+
+# Secrets
+.env
+
+# Generated runtime data
+data/*
+!data/.gitkeep
+logs/*
+!logs/.gitkeep
+exports/*
+!exports/.gitkeep
+*.sqlite3
+*.db
+
+# Tests / tooling
+.pytest_cache/
+.coverage
+htmlcov/
+.idea/
+.vscode/

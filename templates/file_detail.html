@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon, badge %}
+{% block title %}File Detail{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>File detail</h1><p>Recorded hashes and scan history for one monitored file. File contents are never displayed.</p></div>
+  <a class="btn btn-ghost" href="{{ url_for('fim.inventory') }}">← Back to inventory</a></div>
+<section class="card">
+  <dl class="kv">
+    <dt>Directory</dt><dd class="path">{{ d.path }}</dd>
+    <dt>Relative path</dt><dd class="path">{{ rel }}</dd>
+    {% if base %}
+    <dt>Baseline SHA-256</dt><dd><code>{{ base.sha256 }}</code></dd>
+    <dt>Baseline size</dt><dd>{{ base.size }} bytes</dd>
+    <dt>Baseline recorded</dt><dd>{{ base.baseline_at }}</dd>
+    {% else %}
+    <dt>Baseline</dt><dd>Not in the baseline</dd>
+    {% endif %}
+  </dl>
+</section>
+<section class="card">
+  <h2>Recent scan results (newest first)</h2>
+  {% if results %}
+  <div class="table-wrap"><table>
+    <thead><tr><th>Scan</th><th>Time (UTC)</th><th>Status</th><th>Previous hash</th><th>Current hash</th></tr></thead>
+    <tbody>{% for r in results %}
+      <tr><td><a href="{{ url_for('fim.scan_detail', scan_id=r.scan_id) }}">#{{ r.scan_id }}</a></td><td>{{ r.started_at }}</td><td>{{ badge(r.status) }}</td>
+        <td>{% if r.previous_hash %}<code>{{ r.previous_hash }}</code>{% else %}—{% endif %}</td>
+        <td>{% if r.current_hash %}<code>{{ r.current_hash }}</code>{% else %}—{% endif %}</td></tr>
+    {% endfor %}</tbody></table></div>
+  {% else %}<div class="empty">This file has not appeared in a scan yet.</div>{% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+  <title>{% block title %}Dashboard{% endblock %} · File Integrity Monitor</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to main content</a>
+{% from '_macros.html' import icon %}
+{% set nav = [
+  ('fim.dashboard', 'Dashboard', 'home'),
+  ('fim.directories', 'Monitored Directories', 'folder'),
+  ('fim.inventory', 'File Inventory', 'files'),
+  ('fim.events', 'Security Events', 'alert'),
+  ('fim.scan_history', 'Scan History', 'clock'),
+  ('fim.reports_page', 'Reports', 'report'),
+  ('fim.settings', 'Settings', 'gear'),
+  ('fim.about', 'About Project', 'info'),
+] %}
+<div class="app-shell">
+  <aside class="sidebar" id="sidebar" aria-label="Primary">
+    <div class="brand">{{ icon('shield') }}<span>FIM<small>File Integrity Monitor</small></span></div>
+    <nav>
+      <ul>
+        {% for endpoint, label, ic in nav %}
+        <li><a href="{{ url_for(endpoint) }}" class="nav-link{% if request.endpoint == endpoint %} active{% endif %}"
+               {% if request.endpoint == endpoint %}aria-current="page"{% endif %}>{{ icon(ic) }}<span>{{ label }}</span></a></li>
+        {% endfor %}
+      </ul>
+    </nav>
+    <p class="sidebar-note">Local, single-user tool. Bound to localhost.</p>
+  </aside>
+  <div class="main-col">
+    <header class="topbar">
+      <button type="button" class="icon-btn menu-toggle" id="menuToggle" aria-controls="sidebar" aria-expanded="false" aria-label="Toggle navigation">{{ icon('menu') }}</button>
+      <div class="topbar-title">Web Application Security · 24CSA535</div>
+      <form method="post" action="{{ url_for('fim.scan_all') }}" class="topbar-actions" data-loading>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn btn-primary btn-sm">{{ icon('scan') }} Scan all</button>
+      </form>
+    </header>
+    <main id="main" tabindex="-1">
+      {% block content %}{% endblock %}
+    </main>
+    <footer class="footer">
+      File changes are indicators to investigate, not proof of an attack. Logs are audit records, not tamper-proof evidence.
+    </footer>
+  </div>
+</div>
+
+<div class="toast-stack" id="toastStack" aria-live="polite" aria-atomic="false">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+      <div class="toast toast-{{ category }}" role="{{ 'alert' if category == 'danger' else 'status' }}">
+        <span class="toast-text">{{ message }}</span>
+        <button type="button" class="toast-close" aria-label="Dismiss notification">×</button>
+      </div>
+    {% endfor %}
+  {% endwith %}
+</div>
+
+<dialog id="confirmDialog" aria-labelledby="confirmTitle">
+  <form method="dialog" class="dialog-body">
+    <h2 id="confirmTitle">Please confirm</h2>
+    <p id="confirmMessage"></p>
+    <div class="dialog-actions">
+      <button value="cancel" class="btn btn-ghost">Cancel</button>
+      <button value="ok" class="btn btn-danger" id="confirmOk">Confirm</button>
+    </div>
+  </form>
+</dialog>
+<script src="{{ url_for('static', filename='js/app.js') }}" defer></script>
+</body>
+</html>

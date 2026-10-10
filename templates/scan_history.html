@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon, badge, short, pager %}
+{% block title %}Scan History{% endblock %}
+{% block content %}
+{% if scan %}
+<div class="page-head"><div><h1>Scan #{{ scan.id }}</h1>
+  <p>{{ scan.dir_label or scan.dir_path }} · started {{ scan.started_at }} UTC · {{ scan.trigger_type|lower }} scan</p></div>
+  <div class="actions"><a class="btn btn-ghost" href="{{ url_for('fim.scan_history') }}">← All scans</a>
+  <a class="btn btn-primary" href="{{ url_for('fim.download_report', scan_id=scan.id) }}">{{ icon('download') }} Export CSV</a></div></div>
+<section class="card">
+  <dl class="kv">
+    <dt>Result</dt><dd>{{ badge(scan.status) }}</dd>
+    <dt>Files seen</dt><dd>{{ scan.total_files }}</dd>
+    <dt>Unchanged / Modified / New / Deleted / Errors</dt><dd>{{ scan.unchanged }} / {{ scan.modified }} / {{ scan.new_files }} / {{ scan.deleted }} / {{ scan.errors }}</dd>
+    <dt>Notes</dt><dd>{{ scan.message or '—' }}</dd>
+  </dl>
+  {% if scan.status == 'PARTIAL' %}<div class="alert alert-warn">{{ icon('alert') }}<div>This scan was <strong>partial</strong>: some files or folders could not be inspected. Those are reported as errors, never as deletions.</div></div>{% endif %}
+</section>
+<section class="card"><h2>Findings (unchanged files omitted)</h2>
+  {% if results %}
+  <div class="table-wrap"><table><thead><tr><th>Status</th><th>Relative path</th><th>Previous hash</th><th>Current hash</th><th>Size</th><th>Error</th></tr></thead>
+  <tbody>{% for r in results %}<tr><td>{{ badge(r.status) }}</td><td class="path">{{ r.rel_path }}</td><td>{{ short(r.previous_hash) }}</td><td>{{ short(r.current_hash) }}</td><td>{{ r.size if r.size is not none else '—' }}</td><td>{{ r.error or '—' }}</td></tr>{% endfor %}</tbody></table></div>
+  {% else %}<div class="empty"><strong>No findings</strong>Every checked file matched the baseline.</div>{% endif %}
+</section>
+{% else %}
+<div class="page-head"><div><h1>Scan History</h1><p>Every scan with its completeness. <em>Partial</em> means some files could not be inspected; <em>failed</em> means the scan could not run. Neither ever replaces the baseline.</p></div></div>
+<form method="get" action="{{ url_for('fim.scan_history') }}" class="card filters form-grid" data-autosubmit>
+  <div><label for="directory_id">Directory</label><select id="directory_id" name="directory_id"><option value="">All</option>
+    {% for d in dirs %}<option value="{{ d.id }}"{% if f.directory_id == d.id %} selected{% endif %}>{{ d.label or d.path }}</option>{% endfor %}</select></div>
+  <div><button class="btn btn-ghost" type="submit">Filter</button></div>
+</form>
+<div class="card">
+  <p class="muted">{{ total }} scan{{ '' if total == 1 else 's' }}</p>
+  {% if rows %}
+  <div class="table-wrap"><table>
+    <thead><tr><th>Scan</th><th>Directory</th><th>Started (UTC)</th><th>Trigger</th><th>Completeness</th><th>Files</th><th>Unch.</th><th>Mod.</th><th>New</th><th>Del.</th><th>Err.</th><th>Notes</th></tr></thead>
+    <tbody>{% for s in rows %}
+      <tr><td><a href="{{ url_for('fim.scan_detail', scan_id=s.id) }}">#{{ s.id }}</a></td><td>{{ s.dir_label or s.dir_path }}</td><td>{{ s.started_at }}</td>
+        <td>{{ badge(s.trigger_type) }}</td><td>{{ badge(s.status) }}</td><td>{{ s.total_files }}</td><td>{{ s.unchanged }}</td><td>{{ s.modified }}</td><td>{{ s.new_files }}</td><td>{{ s.deleted }}</td><td>{{ s.errors }}</td><td>{{ s.message or '' }}</td></tr>
+    {% endfor %}</tbody></table></div>
+  {{ pager('fim.scan_history', page, pages, {'directory_id': f.directory_id}) }}
+  {% else %}<div class="empty"><strong>No scans yet</strong>Run a scan from the dashboard or the Monitored Directories page.</div>{% endif %}
+</div>
+{% endif %}
+{% endblock %}

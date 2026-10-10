@@ -1,0 +1,4 @@
+This is a harmless demonstration file for the File Integrity Monitor.
+
+Original content. Edit this file by hand after creating a baseline and the next
+scan will report it as MODIFIED.

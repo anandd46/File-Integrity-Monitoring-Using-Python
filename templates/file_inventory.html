@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon, badge, short, pager %}
+{% block title %}File Inventory{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>File Inventory</h1>
+  <p>Files from each directory's latest scan (or its baseline, if it has not been scanned yet).</p></div>
+</div>
+<form method="get" action="{{ url_for('fim.inventory') }}" class="card filters form-grid" role="search" aria-label="Filter inventory">
+  <div><label for="q">Search path</label><input type="search" id="q" name="q" value="{{ f.q }}" maxlength="100"></div>
+  <div><label for="directory_id">Directory</label>
+    <select id="directory_id" name="directory_id"><option value="">All</option>
+      {% for d in dirs %}<option value="{{ d.id }}"{% if f.directory_id == d.id %} selected{% endif %}>{{ d.label or d.path }}</option>{% endfor %}</select></div>
+  <div><label for="status">Status</label>
+    <select id="status" name="status"><option value="">All</option>
+      {% for s in statuses %}<option value="{{ s }}"{% if f.status == s %} selected{% endif %}>{{ s }}</option>{% endfor %}</select></div>
+  <div><label for="sort">Sort by</label>
+    <select id="sort" name="sort">{% for k in ['path','status','size','directory'] %}<option value="{{ k }}"{% if f.sort == k %} selected{% endif %}>{{ k|capitalize }}</option>{% endfor %}</select></div>
+  <div><label for="order">Order</label>
+    <select id="order" name="order"><option value="asc"{% if f.order == 'asc' %} selected{% endif %}>Ascending</option><option value="desc"{% if f.order == 'desc' %} selected{% endif %}>Descending</option></select></div>
+  <div class="actions"><button class="btn btn-primary" type="submit">Apply</button><a class="btn btn-ghost" href="{{ url_for('fim.inventory') }}">Reset</a></div>
+</form>
+<div class="card">
+  <p class="muted">{{ total }} file{{ '' if total == 1 else 's' }}</p>
+  {% if rows %}
+  <div class="table-wrap"><table>
+    <thead><tr><th>Status</th><th>Relative path</th><th>Directory</th><th>Baseline hash</th><th>Current hash</th><th>Size</th><th></th></tr></thead>
+    <tbody>
+    {% for r in rows %}
+      <tr><td>{{ badge(r.status) }}{% if r.error %}<div class="help">{{ r.error }}</div>{% endif %}</td>
+        <td class="path">{{ r.rel_path }}</td><td>{{ r.dir_label or r.dir_path }}</td>
+        <td>{{ short(r.previous_hash) }}</td><td>{{ short(r.current_hash) }}</td>
+        <td>{{ r.size if r.size is not none else '—' }}</td>
+        <td><a class="btn btn-ghost btn-sm" href="{{ url_for('fim.file_detail', directory_id=r.directory_id, path=r.rel_path) }}">Details</a></td></tr>
+    {% endfor %}
+    </tbody></table></div>
+  {{ pager('fim.inventory', page, pages, {'q': f.q, 'directory_id': f.directory_id, 'status': f.status, 'sort': f.sort, 'order': f.order}) }}
+  {% else %}
+  <div class="empty"><strong>No files to show</strong>Create a baseline for a directory, or adjust the filters.</div>
+  {% endif %}
+</div>
+{% endblock %}

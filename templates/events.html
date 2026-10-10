@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon, badge, short, pager %}
+{% block title %}Security Events{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Security Events</h1>
+  <p>Audit trail of detected changes, inspection errors, scan failures and baseline changes, newest first. Unchanged files never generate events, and an unchanged finding is not repeated on every scan. This log is an application record, not tamper-proof evidence.</p></div></div>
+<form method="get" action="{{ url_for('fim.events') }}" class="card filters form-grid" role="search" aria-label="Filter events">
+  <div><label for="q">Search</label><input type="search" id="q" name="q" value="{{ f.q }}" maxlength="100" placeholder="path or description"></div>
+  <div><label for="category">Category</label><select id="category" name="category"><option value="">All</option>
+    {% for k, v in categories.items() %}<option value="{{ k }}"{% if f.category == k %} selected{% endif %}>{{ v }}</option>{% endfor %}</select></div>
+  <div><label for="change">Change type</label><select id="change" name="change"><option value="">Any</option>
+    {% for k in ['MODIFIED','NEW','DELETED'] %}<option value="{{ k }}"{% if f.change == k %} selected{% endif %}>{{ k }}</option>{% endfor %}</select></div>
+  <div><label for="directory_id">Directory</label><select id="directory_id" name="directory_id"><option value="">All</option>
+    {% for d in dirs %}<option value="{{ d.id }}"{% if f.directory_id == d.id %} selected{% endif %}>{{ d.label or d.path }}</option>{% endfor %}</select></div>
+  <div><label for="scan_id">Scan ID</label><input type="number" id="scan_id" name="scan_id" min="1" value="{{ f.scan_id if f.scan_id else '' }}"></div>
+  <div class="actions"><button class="btn btn-primary" type="submit">Apply</button><a class="btn btn-ghost" href="{{ url_for('fim.events') }}">Reset</a></div>
+</form>
+<div class="card">
+  <p class="muted">{{ total }} event{{ '' if total == 1 else 's' }}</p>
+  {% if rows %}
+  <div class="table-wrap"><table>
+    <thead><tr><th>ID</th><th>Time (UTC)</th><th>Category</th><th>Directory</th><th>File</th><th>Previous hash</th><th>Current hash</th><th>Scan</th><th>Description</th></tr></thead>
+    <tbody>{% for e in rows %}
+      <tr><td>{{ e.id }}</td><td>{{ e.timestamp }}</td>
+        <td>{{ badge(e.category) }}{% if e.change_type %}<div>{{ badge(e.change_type) }}</div>{% endif %}</td>
+        <td class="path">{{ e.directory_path or '—' }}</td><td class="path">{{ e.rel_path or '—' }}</td>
+        <td>{{ short(e.previous_hash) }}</td><td>{{ short(e.current_hash) }}</td>
+        <td>{% if e.scan_id %}<a href="{{ url_for('fim.scan_detail', scan_id=e.scan_id) }}">#{{ e.scan_id }}</a>{% else %}—{% endif %}</td>
+        <td>{{ e.description }}</td></tr>
+    {% endfor %}</tbody></table></div>
+  {{ pager('fim.events', page, pages, {'q': f.q, 'category': f.category, 'change': f.change, 'directory_id': f.directory_id, 'scan_id': f.scan_id}) }}
+  {% else %}<div class="empty"><strong>No matching events</strong>Try different filters, or run a scan.</div>{% endif %}
+</div>
+{% endblock %}

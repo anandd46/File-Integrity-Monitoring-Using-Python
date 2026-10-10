@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Error {{ code }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{{ code }} · {{ name }}</h1></div></div>
+<section class="card">
+  <p>{{ message }}</p>
+  <p class="muted">No technical details are shown on this page.</p>
+  <div class="actions"><a class="btn btn-primary" href="{{ url_for('fim.dashboard') }}">Back to dashboard</a></div>
+</section>
+{% endblock %}

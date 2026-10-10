@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon, badge %}
+{% block title %}Reports{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Reports</h1>
+  <p>Download scan results as CSV. Cells that start with <code>=</code>, <code>+</code>, <code>-</code> or <code>@</code> are prefixed with an apostrophe so spreadsheets cannot run them as formulas. A copy of each report is also saved to the configured export folder.</p></div></div>
+<form method="get" action="{{ url_for('fim.download_report') }}" class="card form-grid" aria-label="Export CSV report">
+  <div><label for="scan_id">Scan</label>
+    <select id="scan_id" name="scan_id"><option value="">Latest scan of each directory</option>
+      {% for s in scans %}<option value="{{ s.id }}">#{{ s.id }} · {{ s.label }} · {{ s.started_at }} ({{ s.status|lower }})</option>{% endfor %}</select></div>
+  <div><label for="directory_id">Directory</label>
+    <select id="directory_id" name="directory_id"><option value="">All directories</option>
+      {% for d in dirs %}<option value="{{ d.id }}">{{ d.label or d.path }}</option>{% endfor %}</select></div>
+  <div><label for="status">Integrity status</label>
+    <select id="status" name="status"><option value="">All statuses</option>
+      {% for s in statuses %}<option value="{{ s }}">{{ s }}</option>{% endfor %}</select></div>
+  <div><button type="submit" class="btn btn-primary">{{ icon('download') }} Download CSV</button></div>
+</form>
+<section class="card"><h2>Report columns</h2>
+  <p class="muted">report_generated_at, scan_id, monitored_directory, relative_path, integrity_status, previous_hash, current_hash, file_size_bytes, inspection_error</p>
+  <p class="muted">Reports contain only data the monitor stored about registered directories: no secrets, environment variables or unrelated filesystem information.</p>
+  {% if not scans %}<div class="alert alert-info">{{ icon('info') }}<div>No scans exist yet, so a report will contain only its header row. Run a scan first.</div></div>{% endif %}
+</section>
+{% endblock %}

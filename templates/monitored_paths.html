@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon, badge %}
+{% block title %}Monitored Directories{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Monitored Directories</h1>
+    <p>Register only directories you own or are authorised to monitor. The monitor reads files to hash them; it never executes, modifies or deletes them.</p>
+  </div>
+</div>
+
+<section class="card" aria-labelledby="addTitle">
+  <h2 id="addTitle">Register a directory</h2>
+  <form method="post" action="{{ url_for('fim.add_directory') }}" class="form-grid" data-loading>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="wide">
+      <label for="path">Absolute directory path</label>
+      <input type="text" id="path" name="path" required maxlength="4096" autocomplete="off" placeholder="e.g. /home/student/myapp/templates or C:\Users\Anand\myapp\templates">
+      <div class="help">Validated on the server: must exist, be readable, contain no <code>..</code> segments, not be a symbolic link, and not be a protected system or application-data location.</div>
+    </div>
+    <div>
+      <label for="label">Label (optional)</label>
+      <input type="text" id="label" name="label" maxlength="80" autocomplete="off">
+    </div>
+    <div>
+      <label for="category">File category</label>
+      <select id="category" name="category">
+        {% for key, (title, why) in categories.items() %}<option value="{{ key }}"{% if key == 'other' %} selected{% endif %}>{{ title }}</option>{% endfor %}
+      </select>
+    </div>
+    <div><button type="submit" class="btn btn-primary">{{ icon('plus') }} Register directory</button></div>
+  </form>
+</section>
+
+<section class="card" aria-labelledby="listTitle">
+  <h2 id="listTitle">Registered directories</h2>
+  {% if directories %}
+  <div class="table-wrap"><table>
+    <thead><tr><th>Label</th><th>Path</th><th>Category</th><th>Baseline</th><th>Last scan (UTC)</th><th>Actions</th></tr></thead>
+    <tbody>
+    {% for d in directories %}
+      <tr>
+        <td>{{ d.label }}</td>
+        <td class="path">{{ d.path }}</td>
+        <td>{{ categories.get(d.category, categories['other'])[0] }}</td>
+        <td>{% if d.baseline_count %}{{ d.baseline_count }} files<br><span class="muted">{{ d.last_baseline_at }}</span>{% else %}<span class="badge badge-warn"><span class="dot" aria-hidden="true"></span>No baseline</span>{% endif %}</td>
+        <td>{{ d.last_scan_at or '—' }}</td>
+        <td><div class="actions">
+          {% if not d.baseline_count %}
+          <form method="post" action="{{ url_for('fim.baseline_directory', dir_id=d.id) }}" data-loading>
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="btn btn-primary btn-sm" type="submit">Create baseline</button>
+          </form>
+          {% else %}
+          <form method="post" action="{{ url_for('fim.scan_directory', dir_id=d.id) }}" data-loading>
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="btn btn-primary btn-sm" type="submit">{{ icon('scan') }} Scan</button>
+          </form>
+          <form method="post" action="{{ url_for('fim.rebaseline_directory', dir_id=d.id) }}"
+                data-confirm="Rebaselining makes the CURRENT state of every file the new trusted reference, including any modified or new files. Only continue if you have reviewed the detected changes and know they are legitimate."
+                data-confirm-label="Replace baseline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="btn btn-warn btn-sm" type="submit">{{ icon('refresh') }} Rebaseline</button>
+          </form>
+          {% endif %}
+          <form method="post" action="{{ url_for('fim.remove_directory', dir_id=d.id) }}"
+                data-confirm="Remove this directory from monitoring? Its baseline and scan data are deleted from the database. The files on disk are not touched."
+                data-confirm-label="Remove directory">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="btn btn-ghost btn-sm" type="submit">{{ icon('trash') }} Remove</button>
+          </form>
+        </div></td>
+      </tr>
+    {% endfor %}
+    </tbody></table></div>
+  {% else %}
+  <div class="empty"><strong>No directories registered</strong>Use the form above. For a safe demo, register the project's <code>sample_files</code> directory.</div>
+  {% endif %}
+</section>
+
+<section aria-labelledby="catTitle">
+  <h2 id="catTitle" class="muted section-gap">What to monitor and why</h2>
+  <div class="grid grid-3">
+    {% for key, (title, why) in categories.items() %}
+    <div class="card cat-card"><h3>{{ title }}</h3><p class="muted">{{ why }}</p></div>
+    {% endfor %}
+  </div>
+  <p class="muted">This tool only checks directories you register. It does not scan the whole system and cannot detect every kind of web application attack; it detects content changes to the files you chose.</p>
+</section>
+{% endblock %}
